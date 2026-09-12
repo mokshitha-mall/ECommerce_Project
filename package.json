@@ -8,7 +8,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.5",
     "multer": "^2.3.0",
-    "npm": "^11.19.1"
+    "npm": "^11.19.1",
+    "swagger-ui-express": "^5.0.1"
   },
   "name": "project",
   "version": "1.0.0",
