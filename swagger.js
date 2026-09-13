@@ -33,7 +33,7 @@ const swaggerDocument = {
             type: "string",
             example: "64abc123456789"
           },
-          name: {
+          username: {
             type: "string",
             example: "Mokshitha"
           },
@@ -43,16 +43,17 @@ const swaggerDocument = {
           },
           role: {
             type: "string",
+            enum: ["user", "admin"],
             example: "user"
           }
         }
       },
 
-      RegisterRequest: {
+      SignupRequest: {
         type: "object",
-        required: ["name", "email", "password"],
+        required: ["username", "email", "password"],
         properties: {
-          name: {
+          username: {
             type: "string",
             example: "Mokshitha"
           },
@@ -63,6 +64,11 @@ const swaggerDocument = {
           password: {
             type: "string",
             example: "123456"
+          },
+          role: {
+            type: "string",
+            enum: ["user", "admin"],
+            example: "user"
           }
         }
       },
@@ -78,6 +84,29 @@ const swaggerDocument = {
           password: {
             type: "string",
             example: "123456"
+          }
+        }
+      },
+
+      UpdateUserRequest: {
+        type: "object",
+        properties: {
+          username: {
+            type: "string",
+            example: "MokshithaUpdated"
+          },
+          email: {
+            type: "string",
+            example: "mokshitha_new@gmail.com"
+          },
+          password: {
+            type: "string",
+            example: "newpassword123"
+          },
+          role: {
+            type: "string",
+            enum: ["user", "admin"],
+            example: "admin"
           }
         }
       },
@@ -105,6 +134,10 @@ const swaggerDocument = {
             type: "string",
             example: "Electronics"
           },
+          quantity: {
+            type: "integer",
+            example: 10
+          },
           published: {
             type: "boolean",
             example: true
@@ -114,7 +147,7 @@ const swaggerDocument = {
 
       CreateProductRequest: {
         type: "object",
-        required: ["name", "price", "category"],
+        required: ["name", "description", "price", "category", "quantity"],
         properties: {
           name: {
             type: "string",
@@ -131,17 +164,14 @@ const swaggerDocument = {
           category: {
             type: "string",
             example: "Electronics"
-          }
-        }
-      },
-
-      UpdateUserRoleRequest: {
-        type: "object",
-        required: ["role"],
-        properties: {
-          role: {
-            type: "string",
-            example: "admin"
+          },
+          quantity: {
+            type: "integer",
+            example: 10
+          },
+          published: {
+            type: "boolean",
+            example: false
           }
         }
       }
@@ -152,39 +182,38 @@ const swaggerDocument = {
     // =========================
     // AUTH
     // =========================
-
-    "/api/auth/register": {
+    "/auth/signup": {
       post: {
         tags: ["Authentication"],
         summary: "Register a new user",
-
         requestBody: {
           required: true,
           content: {
             "application/json": {
               schema: {
-                $ref: "#/components/schemas/RegisterRequest"
+                $ref: "#/components/schemas/SignupRequest"
               }
             }
           }
         },
-
         responses: {
-          201: {
-            description: "User registered successfully"
+          200: {
+            description: "User Signup Successful"
           },
           400: {
-            description: "Invalid request"
+            description: "Fields are required or Email Already Registered"
+          },
+          500: {
+            description: "Unable to create the user"
           }
         }
       }
     },
 
-    "/api/auth/login": {
+    "/auth/login": {
       post: {
         tags: ["Authentication"],
         summary: "Login user",
-
         requestBody: {
           required: true,
           content: {
@@ -195,12 +224,14 @@ const swaggerDocument = {
             }
           }
         },
-
         responses: {
           200: {
-            description: "Login successful"
+            description: "Login Successful"
           },
-          401: {
+          400: {
+            description: "All Fields are required"
+          },
+          404: {
             description: "Invalid email or password"
           }
         }
@@ -210,41 +241,28 @@ const swaggerDocument = {
     // =========================
     // PRODUCTS
     // =========================
-
-    "/api/products": {
+    "/products": {
       get: {
         tags: ["Products"],
         summary: "Get all products",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "category",
             in: "query",
-            schema: {
-              type: "string"
-            },
+            schema: { type: "string" },
             example: "Electronics"
           },
           {
             name: "minPrice",
             in: "query",
-            schema: {
-              type: "number"
-            },
+            schema: { type: "number" },
             example: 1000
           },
           {
             name: "maxPrice",
             in: "query",
-            schema: {
-              type: "number"
-            },
+            schema: { type: "number" },
             example: 50000
           },
           {
@@ -259,41 +277,30 @@ const swaggerDocument = {
           {
             name: "page",
             in: "query",
-            schema: {
-              type: "integer"
-            },
+            schema: { type: "integer" },
             example: 1
           },
           {
             name: "limit",
             in: "query",
-            schema: {
-              type: "integer"
-            },
+            schema: { type: "integer" },
             example: 10
           }
         ],
-
         responses: {
           200: {
             description: "Products retrieved successfully"
           },
-          401: {
-            description: "Unauthorized"
+          500: {
+            description: "Unable to get the products"
           }
         }
       },
 
       post: {
         tags: ["Products"],
-        summary: "Create a product - Admin only",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Create a product (Admin only)",
+        security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
           content: {
@@ -304,46 +311,100 @@ const swaggerDocument = {
             }
           }
         },
-
         responses: {
           201: {
             description: "Product created successfully"
           },
-          401: {
-            description: "Unauthorized"
+          400: {
+            description: "All fields are required to create a product"
           },
-          403: {
-            description: "Admin access required"
+          500: {
+            description: "Unable to create the product"
           }
         }
       }
     },
 
-    "/api/products/{id}": {
+    "/products/import": {
+      post: {
+        tags: ["Products"],
+        summary: "Import products via CSV (Admin only)",
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["file"],
+                properties: {
+                  file: {
+                    type: "string",
+                    format: "binary",
+                    description: "CSV file with products"
+                  }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          201: {
+            description: "Products imported successfully"
+          },
+          400: {
+            description: "CSV File is empty or Validation Failed"
+          },
+          500: {
+            description: "Unable to import products"
+          }
+        }
+      }
+    },
+
+    "/products/export": {
+      get: {
+        tags: ["Products"],
+        summary: "Export products to CSV (Admin only)",
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: "CSV file download",
+            content: {
+              "text/csv": {
+                schema: {
+                  type: "string",
+                  format: "binary"
+                }
+              }
+            }
+          },
+          500: {
+            description: "Unable to export products"
+          }
+        }
+      }
+    },
+
+    "/products/{id}": {
       get: {
         tags: ["Products"],
         summary: "Get product by ID",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
             description: "Product retrieved successfully"
+          },
+          400: {
+            description: "Product Id is invalid or unauthorized role"
           },
           404: {
             description: "Product not found"
@@ -353,25 +414,16 @@ const swaggerDocument = {
 
       put: {
         tags: ["Products"],
-        summary: "Update product",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Update product (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         requestBody: {
           required: true,
           content: {
@@ -382,10 +434,12 @@ const swaggerDocument = {
             }
           }
         },
-
         responses: {
           200: {
             description: "Product updated successfully"
+          },
+          400: {
+            description: "Product Id is invalid"
           },
           404: {
             description: "Product not found"
@@ -395,28 +449,22 @@ const swaggerDocument = {
 
       delete: {
         tags: ["Products"],
-        summary: "Delete product",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Delete product (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
             description: "Product deleted successfully"
+          },
+          400: {
+            description: "Product Id is invalid"
           },
           404: {
             description: "Product not found"
@@ -425,61 +473,55 @@ const swaggerDocument = {
       }
     },
 
-    "/api/products/{id}/publish": {
+    "/products/{id}/publish": {
       patch: {
         tags: ["Products"],
-        summary: "Publish product",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Publish product (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
-            description: "Product published successfully"
+            description: "Product is successfully published"
+          },
+          400: {
+            description: "Product Id is invalid"
+          },
+          404: {
+            description: "Product not found"
           }
         }
       }
     },
 
-    "/api/products/{id}/unpublish": {
+    "/products/{id}/unpublish": {
       patch: {
         tags: ["Products"],
-        summary: "Unpublish product",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Unpublish product (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
-            description: "Product unpublished successfully"
+            description: "Product is unPublished"
+          },
+          400: {
+            description: "Product Id is invalid"
+          },
+          404: {
+            description: "Product not found"
           }
         }
       }
@@ -488,54 +530,76 @@ const swaggerDocument = {
     // =========================
     // USERS
     // =========================
-
-    "/api/users": {
+    "/users": {
       get: {
         tags: ["Users"],
-        summary: "Get all users",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Get all users (Admin only)",
+        security: [{ bearerAuth: [] }],
         responses: {
           200: {
             description: "Users retrieved successfully"
           },
-          401: {
-            description: "Unauthorized"
+          404: {
+            description: "No users Found"
           }
         }
       }
     },
 
-    "/api/users/{id}": {
+    "/users/{id}": {
       get: {
         tags: ["Users"],
-        summary: "Get user by ID",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Get user by ID (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
             description: "User retrieved successfully"
+          },
+          400: {
+            description: "Invalid user id"
+          },
+          404: {
+            description: "User not found"
+          }
+        }
+      },
+
+      put: {
+        tags: ["Users"],
+        summary: "Update user (Admin only)",
+        security: [{ bearerAuth: [] }],
+        parameters: [
+          {
+            name: "id",
+            in: "path",
+            required: true,
+            schema: { type: "string" }
+          }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                $ref: "#/components/schemas/UpdateUserRequest"
+              }
+            }
+          }
+        },
+        responses: {
+          200: {
+            description: "User updated successfully"
+          },
+          400: {
+            description: "Invalid user id"
           },
           404: {
             description: "User not found"
@@ -545,72 +609,22 @@ const swaggerDocument = {
 
       delete: {
         tags: ["Users"],
-        summary: "Delete user",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
+        summary: "Delete user (Admin only)",
+        security: [{ bearerAuth: [] }],
         parameters: [
           {
             name: "id",
             in: "path",
             required: true,
-            schema: {
-              type: "string"
-            }
+            schema: { type: "string" }
           }
         ],
-
         responses: {
           200: {
             description: "User deleted successfully"
           },
-          404: {
-            description: "User not found"
-          }
-        }
-      }
-    },
-
-    "/api/users/{id}/role": {
-      patch: {
-        tags: ["Users"],
-        summary: "Update user role",
-
-        security: [
-          {
-            bearerAuth: []
-          }
-        ],
-
-        parameters: [
-          {
-            name: "id",
-            in: "path",
-            required: true,
-            schema: {
-              type: "string"
-            }
-          }
-        ],
-
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                $ref: "#/components/schemas/UpdateUserRoleRequest"
-              }
-            }
-          }
-        },
-
-        responses: {
-          200: {
-            description: "User role updated successfully"
+          400: {
+            description: "Invalid user id"
           },
           404: {
             description: "User not found"
